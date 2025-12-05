@@ -1,164 +1,173 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>CliniBill System</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CliniBill MVP</title>
 
-  <!-- React + Babel -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Tailwind -->
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+<!-- React + ReactDOM -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+.card {
+  @apply bg-white shadow-md border rounded-lg p-4;
+}
+.card-header {
+  @apply font-semibold text-lg mb-3;
+}
+.btn {
+  @apply px-4 py-2 rounded-lg cursor-pointer font-semibold transition;
+}
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white;
+}
+.btn-outline {
+  @apply border border-gray-300 hover:bg-gray-100;
+}
+</style>
 </head>
 
-<body class="bg-gray-100">
-  <div id="root"></div>
+<body class="bg-gray-50">
 
-<script type="text/babel">
+<div id="app"></div>
 
-const { useState, useEffect } = React;
+<script>
+const { useState } = React;
 
-// Minimal replacement icons (browser-safe)
-const Icon = {
-  users: () => <span className="text-blue-500 text-2xl">👥</span>,
-  money: () => <span className="text-green-500 text-2xl">💰</span>,
-  file: () => <span className="text-yellow-500 text-2xl">📄</span>,
-  check: () => <span className="text-purple-500 text-2xl">✔️</span>,
-  alert: () => <span className="text-blue-600 text-xl">⚠️</span>,
-  clock: () => <span className="text-yellow-600 text-xl">⏳</span>,
-};
+// Mock Data
+const doctors = [
+  { id: 1, name: 'Dr. Smith', site: 'Lifestyle', consultations: 25, earnings: 8750 },
+  { id: 2, name: 'Dr. Johnson', site: 'Vita', consultations: 18, earnings: 6300 },
+  { id: 3, name: 'Dr. Williams', site: 'Lifestyle', consultations: 32, earnings: 11200 }
+];
 
-function StatCard({ icon, title, value, subtitle }) {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-2xl font-bold">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+const recentConsultations = [
+  { id: 1, doctor: 'Dr. Smith', patient: 'John Doe', type: 'Full Consult', amount: 500, payment: 'Card', time: '10:30 AM' },
+  { id: 2, doctor: 'Dr. Johnson', patient: 'Jane Smith', type: 'Script Only', amount: 250, payment: 'Cash', time: '11:15 AM' },
+  { id: 3, doctor: 'Dr. Williams', patient: 'Bob Wilson', type: 'Pensioner', amount: 400, payment: 'Medical Aid', time: '12:00 PM' }
+];
+
+function CliniBillMVP() {
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [consultationType, setConsultationType] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+
+  const Dashboard = () => (
+    <div className="space-y-6">
+      <!-- Metrics -->
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        ${metricCard("Users","Today's Consultations", 47, "text-blue-600")}
+        ${metricCard("DollarSign","Today's Revenue","R23,500","text-green-600")}
+        ${metricCard("CreditCard","Pending Settlements","R16,450","text-purple-600")}
+        ${metricCard("TrendingUp","Weekly Growth","+12%","text-orange-600")}
+      </div>
+
+      <!-- Recent Consultations -->
+      <div class="card">
+        <div class="card-header">Recent Consultations</div>
+        <div class="space-y-4">
+        ${recentConsultations
+          .map(
+            c => `
+            <div class="flex justify-between items-center p-4 border rounded-lg">
+              <div>
+                <p class="font-medium">${c.patient}</p>
+                <p class="text-gray-500 text-sm">${c.doctor} • ${c.time}</p>
+              </div>
+              <div class="text-right">
+                <p class="font-bold">R${c.amount}</p>
+                <p class="text-sm text-gray-500">${c.type} • ${c.payment}</p>
+              </div>
+            </div>`
+          )
+          .join("")}
         </div>
-        {icon}
       </div>
     </div>
   );
-}
 
-function App() {
+  function metricCard(icon, label, value, color) {
+    return `
+      <div class="card p-6 flex items-center">
+        <i data-lucide="${icon}" class="w-8 h-8 ${color}"></i>
+        <div class="ml-3">
+          <p class="text-sm text-gray-500">${label}</p>
+          <p class="text-2xl font-bold">${value}</p>
+        </div>
+      </div>
+    `;
+  }
 
-  const [activeTab, setActiveTab] = useState("invoicing");
-  const [icdSearch, setIcdSearch] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
+  const render = {
+    dashboard: <Dashboard />,
+    consultation: (
+      <div class="card">
+        <div class="card-header">Record New Consultation</div>
+        <div class="space-y-4">
+          <select class="w-full p-3 border rounded" onChange={(e)=>setSelectedDoctor(e.target.value)}>
+            <option>Select Doctor</option>
+            <option>Dr. Smith</option>
+            <option>Dr. Johnson</option>
+            <option>Dr. Williams</option>
+          </select>
 
-  const ICD_CODES = [
-    { code:"Z00.0", desc:"General adult medical exam"},
-    { code:"J06.9", desc:"URI unspecified"},
-    { code:"A09", desc:"Gastroenteritis unspecified"},
-  ];
-
-  const [filteredICD, setFilteredICD] = useState(ICD_CODES);
-
-  useEffect(() => {
-    setFilteredICD(
-      ICD_CODES.filter(item =>
-        item.code.toLowerCase().includes(icdSearch.toLowerCase()) ||
-        item.desc.toLowerCase().includes(icdSearch.toLowerCase())
-      )
-    );
-  }, [icdSearch]);
-
-
-  const consultations = [
-    { id:1, provider:"Dr. Smith", patient:"John Doe", amount:500, status:"Completed" },
-    { id:2, provider:"Dr. Johnson", patient:"Jane Smith", amount:0, status:"Pending" }
-  ];
-
-
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-blue-600 mb-6">CliniBill MVP</h1>
-
-      {/* Tabs */}
-      <div className="flex border-b space-x-6 mb-4">
-        {["invoicing","reconciliation","activity"].map(tab => (
-          <button key={tab}
-            onClick={()=>setActiveTab(tab)}
-            className={`pb-2 ${
-              activeTab === tab ? "text-blue-600 border-b-2 border-blue-500"
-                               : "text-gray-500 hover:text-gray-700"
-            }`}>
-            {tab.replace(/^\w/,c=>c.toUpperCase())}
-          </button>
+          <button class="btn btn-primary w-full">Record Consultation</button>
+        </div>
+      </div>
+    ),
+    reports: (
+      <div class="card">
+        <div class="card-header">Doctor Performance</div>
+        {doctors.map(d => (
+          <div class="p-3 border rounded my-2 flex justify-between">
+            <span>{d.name}</span>
+            <strong>R{d.earnings}</strong>
+          </div>
         ))}
       </div>
+    ),
+    payments: (
+      <button class="btn btn-primary">Process Payments</button>
+    )
+  };
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <StatCard title="Total Consultations" value="12" icon={<Icon.users />} />
-        <StatCard title="Revenue" value="R4500" icon={<Icon.money />} />
-        <StatCard title="Pending Invoices" value="5" icon={<Icon.file />} />
-        <StatCard title="Payments Due" value="R3100" icon={<Icon.check />} />
-      </div>
+  return (
+    <div>
+      <header class="bg-white shadow p-4 flex justify-between">
+        <h1 class="text-xl font-bold text-blue-600">CliniBill MVP</h1>
+      </header>
 
+      <nav class="bg-white shadow-sm flex space-x-6 p-4">
+        {["dashboard","consultation","reports","payments"].map(tab => (
+          <button 
+            className={\`py-2 border-b-2 \${activeTab === tab ? "border-blue-600 text-blue-600 font-bold" : "border-transparent"}\`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab.charAt(0).toUpperCase()+tab.slice(1)}
+          </button>
+        ))}
+      </nav>
 
-      {/* Tab content */}
-      {activeTab === "invoicing" && (
-        <div className="bg-white p-6 rounded shadow-md">
-          <h2 className="text-xl font-semibold mb-6">Create Manual Invoice</h2>
-
-          <label className="block mb-2 text-sm font-medium">Search ICD Code</label>
-          <input
-            value={icdSearch}
-            onChange={e=>setIcdSearch(e.target.value)}
-            onFocus={()=>setShowDropdown(true)}
-            className="w-full border p-3 rounded"
-            placeholder="Search..."
-          />
-
-          {showDropdown && (
-            <div className="bg-white border rounded shadow mt-2">
-              {filteredICD.map((c,i)=>(
-                <div key={i} className="p-2 hover:bg-gray-100 cursor-pointer">
-                  {c.code} — {c.desc}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "activity" && (
-        <div className="bg-white p-6 rounded shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Daily Activity</h2>
-          <table className="w-full border-collapse">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="p-2 text-left">Doctor</th>
-                <th className="p-2 text-left">Patient</th>
-                <th className="p-2 text-left">Amount</th>
-                <th className="p-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {consultations.map(row=>(
-                <tr key={row.id} className="border-b">
-                  <td className="p-2">{row.provider}</td>
-                  <td className="p-2">{row.patient}</td>
-                  <td className="p-2">R{row.amount}</td>
-                  <td className="p-2">{row.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
+      <main class="max-w-6xl mx-auto p-6">
+        {render[activeTab]}
+      </main>
     </div>
   );
 }
 
-ReactDOM.render(<App />, document.getElementById("root"));
+ReactDOM.createRoot(document.getElementById("app")).render(<CliniBillMVP />);
 
+// Load icons after render
+setTimeout(() => lucide.createIcons(), 50);
 </script>
+
 </body>
 </html>
