@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CliniBill POC</title>
+  <title>CliniBill System</title>
 
   <!-- React + Babel -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -17,59 +17,147 @@
 
 <script type="text/babel">
 
-const { useState } = React;
+const { useState, useEffect } = React;
 
-function CliniBillMVP() {
+// Minimal replacement icons (browser-safe)
+const Icon = {
+  users: () => <span className="text-blue-500 text-2xl">👥</span>,
+  money: () => <span className="text-green-500 text-2xl">💰</span>,
+  file: () => <span className="text-yellow-500 text-2xl">📄</span>,
+  check: () => <span className="text-purple-500 text-2xl">✔️</span>,
+  alert: () => <span className="text-blue-600 text-xl">⚠️</span>,
+  clock: () => <span className="text-yellow-600 text-xl">⏳</span>,
+};
 
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [selectedDoctor, setSelectedDoctor] = useState("");
-
+function StatCard({ icon, title, value, subtitle }) {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white p-4 shadow">
-        <h1 className="text-2xl font-bold text-blue-600">CliniBill MVP</h1>
-      </header>
-
-      <nav className="flex space-x-4 bg-white border-b p-3">
-        <button onClick={() => setActiveTab("dashboard")} className={`${activeTab === "dashboard" ? "text-blue-600 border-b-2 border-blue-500" : "text-gray-600"}`}>Dashboard</button>
-        <button onClick={() => setActiveTab("consultation")} className={`${activeTab === "consultation" ? "text-blue-600 border-b-2 border-blue-500" : "text-gray-600"}`}>Consultation</button>
-      </nav>
-
-      <main className="p-6">
-
-        {activeTab === "dashboard" && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Dashboard</h2>
-            <p className="text-gray-600">Summary info goes here...</p>
-          </div>
-        )}
-
-        {activeTab === "consultation" && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">New Consultation</h2>
-
-            <select
-              className="w-full p-3 border rounded mb-4"
-              value={selectedDoctor}
-              onChange={(e) => setSelectedDoctor(e.target.value)}
-            >
-              <option value="">Select Doctor</option>
-              <option>Dr. Smith</option>
-              <option>Dr. Johnson</option>
-            </select>
-
-            <button className="bg-blue-600 text-white px-6 py-3 rounded">
-              Save Consultation
-            </button>
-          </div>
-        )}
-
-      </main>
+    <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-600">{title}</p>
+          <p className="text-2xl font-bold">{value}</p>
+          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+        </div>
+        {icon}
+      </div>
     </div>
   );
 }
 
-ReactDOM.render(<CliniBillMVP />, document.getElementById("root"));
+function App() {
+
+  const [activeTab, setActiveTab] = useState("invoicing");
+  const [icdSearch, setIcdSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const ICD_CODES = [
+    { code:"Z00.0", desc:"General adult medical exam"},
+    { code:"J06.9", desc:"URI unspecified"},
+    { code:"A09", desc:"Gastroenteritis unspecified"},
+  ];
+
+  const [filteredICD, setFilteredICD] = useState(ICD_CODES);
+
+  useEffect(() => {
+    setFilteredICD(
+      ICD_CODES.filter(item =>
+        item.code.toLowerCase().includes(icdSearch.toLowerCase()) ||
+        item.desc.toLowerCase().includes(icdSearch.toLowerCase())
+      )
+    );
+  }, [icdSearch]);
+
+
+  const consultations = [
+    { id:1, provider:"Dr. Smith", patient:"John Doe", amount:500, status:"Completed" },
+    { id:2, provider:"Dr. Johnson", patient:"Jane Smith", amount:0, status:"Pending" }
+  ];
+
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-blue-600 mb-6">CliniBill MVP</h1>
+
+      {/* Tabs */}
+      <div className="flex border-b space-x-6 mb-4">
+        {["invoicing","reconciliation","activity"].map(tab => (
+          <button key={tab}
+            onClick={()=>setActiveTab(tab)}
+            className={`pb-2 ${
+              activeTab === tab ? "text-blue-600 border-b-2 border-blue-500"
+                               : "text-gray-500 hover:text-gray-700"
+            }`}>
+            {tab.replace(/^\w/,c=>c.toUpperCase())}
+          </button>
+        ))}
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <StatCard title="Total Consultations" value="12" icon={<Icon.users />} />
+        <StatCard title="Revenue" value="R4500" icon={<Icon.money />} />
+        <StatCard title="Pending Invoices" value="5" icon={<Icon.file />} />
+        <StatCard title="Payments Due" value="R3100" icon={<Icon.check />} />
+      </div>
+
+
+      {/* Tab content */}
+      {activeTab === "invoicing" && (
+        <div className="bg-white p-6 rounded shadow-md">
+          <h2 className="text-xl font-semibold mb-6">Create Manual Invoice</h2>
+
+          <label className="block mb-2 text-sm font-medium">Search ICD Code</label>
+          <input
+            value={icdSearch}
+            onChange={e=>setIcdSearch(e.target.value)}
+            onFocus={()=>setShowDropdown(true)}
+            className="w-full border p-3 rounded"
+            placeholder="Search..."
+          />
+
+          {showDropdown && (
+            <div className="bg-white border rounded shadow mt-2">
+              {filteredICD.map((c,i)=>(
+                <div key={i} className="p-2 hover:bg-gray-100 cursor-pointer">
+                  {c.code} — {c.desc}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "activity" && (
+        <div className="bg-white p-6 rounded shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Daily Activity</h2>
+          <table className="w-full border-collapse">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="p-2 text-left">Doctor</th>
+                <th className="p-2 text-left">Patient</th>
+                <th className="p-2 text-left">Amount</th>
+                <th className="p-2 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {consultations.map(row=>(
+                <tr key={row.id} className="border-b">
+                  <td className="p-2">{row.provider}</td>
+                  <td className="p-2">{row.patient}</td>
+                  <td className="p-2">R{row.amount}</td>
+                  <td className="p-2">{row.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
 
 </script>
 </body>
