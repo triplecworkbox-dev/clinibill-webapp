@@ -1,0 +1,494 @@
+import React, { useState, useEffect } from ‘react’;
+import { Calendar, DollarSign, FileText, Users, AlertCircle, CheckCircle, Clock } from ‘lucide-react’;
+
+const CliniBillVoucherPOC = () => {
+const [activeTab, setActiveTab] = useState(‘invoicing’);
+
+// Common SA ICD-10 codes for primary healthcare
+const commonICD10Codes = [
+{ code: ‘Z00.0’, description: ‘General adult medical examination’ },
+{ code: ‘Z00.1’, description: ‘Routine child health examination’ },
+{ code: ‘Z00.2’, description: ‘Examination for period of rapid growth in childhood’ },
+{ code: ‘J06.9’, description: ‘Acute upper respiratory infection, unspecified’ },
+{ code: ‘J44.1’, description: ‘Chronic obstructive pulmonary disease with acute exacerbation’ },
+{ code: ‘I10’, description: ‘Essential (primary) hypertension’ },
+{ code: ‘E11.9’, description: ‘Type 2 diabetes mellitus without complications’ },
+{ code: ‘K59.0’, description: ‘Constipation’ },
+{ code: ‘M79.3’, description: ‘Panniculitis, unspecified’ },
+{ code: ‘A09’, description: ‘Infectious gastroenteritis and colitis, unspecified’ },
+{ code: ‘R50.9’, description: ‘Fever, unspecified’ },
+{ code: ‘R06.0’, description: ‘Dyspnoea’ },
+{ code: ‘M25.5’, description: ‘Pain in joint’ },
+{ code: ‘R10.4’, description: ‘Other and unspecified abdominal pain’ },
+{ code: ‘H66.9’, description: ‘Otitis media, unspecified’ },
+{ code: ‘L20.9’, description: ‘Atopic dermatitis, unspecified’ },
+{ code: ‘N39.0’, description: ‘Urinary tract infection, site not specified’ },
+{ code: ‘Z30.0’, description: ‘Encounter for general counselling and advice on contraception’ },
+{ code: ‘B15.9’, description: ‘Hepatitis A without hepatic coma’ },
+{ code: ‘A15.9’, description: ‘Respiratory tuberculosis unspecified’ }
+];
+
+const [icdSearch, setIcdSearch] = useState(’’);
+const [filteredICD10, setFilteredICD10] = useState(commonICD10Codes);
+const [showIcdDropdown, setShowIcdDropdown] = useState(false);
+
+const [consultations, setConsultations] = useState([
+{
+id: 1,
+date: ‘2025-07-22’,
+provider: ‘Dr. Smith’,
+patient: ‘John Doe’,
+icd10: ‘Z00.0’,
+icd10Description: ‘General adult medical examination’,
+type: ‘General Consultation’,
+paymentMethod: ‘Card’,
+amount: 500,
+providerPay: 350,
+pharmacyPay: 50,
+status: ‘Completed’,
+isVoucher: false
+},
+{
+id: 2,
+date: ‘2025-07-22’,
+provider: ‘Dr. Johnson’,
+patient: ‘Jane Smith’,
+icd10: ‘Z00.1’,
+icd10Description: ‘Routine child health examination’,
+type: ‘Follow-up’,
+paymentMethod: ‘Manual Voucher’,
+amount: 0,
+providerPay: 350,
+pharmacyPay: 50,
+status: ‘Pending Invoice’,
+isVoucher: true,
+voucherSource: ‘Government Subsidy’
+}
+]);
+
+const [newInvoice, setNewInvoice] = useState({
+provider: ‘’,
+patient: ‘’,
+icd10: ‘’,
+icd10Description: ‘’,
+type: ‘’,
+voucherSource: ‘’,
+amount: 0
+});
+
+const [weeklyData, setWeeklyData] = useState({
+totalConsultations: 0,
+paidConsultations: 0,
+voucherConsultations: 0,
+totalRevenue: 0,
+providerPayments: 0,
+pharmacyPayments: 0,
+pendingInvoices: 0
+});
+
+useEffect(() => {
+calculateWeeklyData();
+}, [consultations]);
+
+useEffect(() => {
+const filtered = commonICD10Codes.filter(code =>
+code.code.toLowerCase().includes(icdSearch.toLowerCase()) ||
+code.description.toLowerCase().includes(icdSearch.toLowerCase())
+);
+setFilteredICD10(filtered);
+}, [icdSearch]);
+
+const calculateWeeklyData = () => {
+const total = consultations.length;
+const paid = consultations.filter(c => !c.isVoucher).length;
+const voucher = consultations.filter(c => c.isVoucher).length;
+const revenue = consultations.reduce((sum, c) => sum + c.amount, 0);
+const providerPay = consultations.reduce((sum, c) => sum + c.providerPay, 0);
+const pharmacyPay = consultations.reduce((sum, c) => sum + c.pharmacyPay, 0);
+const pending = consultations.filter(c => c.status === ‘Pending Invoice’).length;
+
+```
+setWeeklyData({
+totalConsultations: total,
+paidConsultations: paid,
+voucherConsultations: voucher,
+totalRevenue: revenue,
+providerPayments: providerPay,
+pharmacyPayments: pharmacyPay,
+pendingInvoices: pending
+});
+```
+
+};
+
+const handleCreateInvoice = () => {
+if (!newInvoice.provider || !newInvoice.patient || !newInvoice.voucherSource) return;
+
+```
+const invoice = {
+id: consultations.length + 1,
+date: new Date().toISOString().split('T')[0],
+provider: newInvoice.provider,
+patient: newInvoice.patient,
+icd10: newInvoice.icd10 || 'Z00.0',
+icd10Description: newInvoice.icd10Description || 'General adult medical examination',
+type: newInvoice.type || 'General Consultation',
+paymentMethod: 'Manual Voucher',
+amount: 0, // Zero-rated for Phase 1
+providerPay: 350,
+pharmacyPay: 50,
+status: 'Pending Invoice',
+isVoucher: true,
+voucherSource: newInvoice.voucherSource
+};
+
+setConsultations([...consultations, invoice]);
+setNewInvoice({
+provider: '',
+patient: '',
+icd10: '',
+icd10Description: '',
+type: '',
+voucherSource: '',
+amount: 0
+});
+setIcdSearch('');
+setShowIcdDropdown(false);
+```
+
+};
+
+const StatCard = ({ icon: Icon, title, value, subtitle, color = “blue” }) => (
+<div className={`bg-white p-6 rounded-lg shadow-md border-l-4 border-${color}-500`}>
+<div className="flex items-center justify-between">
+<div>
+<p className="text-sm font-medium text-gray-600">{title}</p>
+<p className={`text-2xl font-bold text-${color}-600`}>{value}</p>
+{subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+</div>
+<Icon className={`h-8 w-8 text-${color}-500`} />
+</div>
+</div>
+);
+
+return (
+<div className="min-h-screen bg-gray-50 p-6">
+<div className="max-w-7xl mx-auto">
+{/* Header */}
+<div className="mb-8">
+<h1 className="text-3xl font-bold text-gray-900 mb-2">CliniBill System</h1>
+<p className="text-gray-600">Phase 1 Proof of Concept - Manual Zero-Rated Invoicing</p>
+</div>
+
+```
+{/* Navigation Tabs */}
+<div className="bg-white rounded-lg shadow-sm mb-6">
+<div className="flex border-b">
+<button
+onClick={() => setActiveTab('invoicing')}
+className={`px-6 py-3 font-medium ${
+activeTab === 'invoicing'
+? 'border-b-2 border-blue-500 text-blue-600'
+: 'text-gray-500 hover:text-gray-700'
+}`}
+>
+Manual Invoicing
+</button>
+<button
+onClick={() => setActiveTab('reconciliation')}
+className={`px-6 py-3 font-medium ${
+activeTab === 'reconciliation'
+? 'border-b-2 border-blue-500 text-blue-600'
+: 'text-gray-500 hover:text-gray-700'
+}`}
+>
+Weekly Reconciliation
+</button>
+<button
+onClick={() => setActiveTab('activity')}
+className={`px-6 py-3 font-medium ${
+activeTab === 'activity'
+? 'border-b-2 border-blue-500 text-blue-600'
+: 'text-gray-500 hover:text-gray-700'
+}`}
+>
+Daily Activity
+</button>
+</div>
+</div>
+
+{/* Weekly Overview Cards */}
+<div className="grid grid-cols-4 gap-4 mb-8">
+<StatCard
+icon={Users}
+title="Total Consultations"
+value={weeklyData.totalConsultations}
+subtitle="This week"
+/>
+<StatCard
+icon={DollarSign}
+title="Revenue Generated"
+value={`R${weeklyData.totalRevenue}`}
+subtitle={`${weeklyData.paidConsultations} paid + ${weeklyData.voucherConsultations} voucher`}
+color="green"
+/>
+<StatCard
+icon={FileText}
+title="Pending Invoices"
+value={weeklyData.pendingInvoices}
+subtitle="Voucher consultations"
+color="orange"
+/>
+<StatCard
+icon={CheckCircle}
+title="Provider Payments Due"
+value={`R${weeklyData.providerPayments}`}
+subtitle={`R${weeklyData.pharmacyPayments} to pharmacies`}
+color="purple"
+/>
+</div>
+
+{/* Tab Content */}
+{activeTab === 'invoicing' && (
+<div className="bg-white rounded-lg shadow-sm p-6">
+<h2 className="text-xl font-semibold mb-6">Create Manual Invoice for Voucher Consultation</h2>
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div>
+<label className="block text-sm font-medium text-gray-700 mb-2">Provider</label>
+<select
+value={newInvoice.provider}
+onChange={(e) => setNewInvoice({...newInvoice, provider: e.target.value})}
+className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+>
+<option value="">Select Provider</option>
+<option value="Dr. Smith">Dr. Smith</option>
+<option value="Dr. Johnson">Dr. Johnson</option>
+<option value="Dr. Williams">Dr. Williams</option>
+<option value="Nurse Practitioner Adams">Nurse Practitioner Adams</option>
+<option value="Dr. Patel">Dr. Patel</option>
+</select>
+</div>
+
+<div>
+<label className="block text-sm font-medium text-gray-700 mb-2">Patient Name</label>
+<input
+type="text"
+value={newInvoice.patient}
+onChange={(e) => setNewInvoice({...newInvoice, patient: e.target.value})}
+className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+placeholder="Enter patient name"
+/>
+</div>
+
+<div className="relative">
+<label className="block text-sm font-medium text-gray-700 mb-2">ICD-10 Code</label>
+<input
+type="text"
+value={icdSearch}
+onChange={(e) => {
+setIcdSearch(e.target.value);
+setShowIcdDropdown(true);
+}}
+onFocus={() => setShowIcdDropdown(true)}
+className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+placeholder="Search ICD-10 codes (e.g., Z00.0 or 'examination')"
+/>
+{showIcdDropdown && filteredICD10.length > 0 && (
+<div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
+{filteredICD10.slice(0, 10).map((code, index) => (
+<div
+key={index}
+className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+onClick={() => {
+setNewInvoice({
+...newInvoice,
+icd10: code.code,
+icd10Description: code.description
+});
+setIcdSearch(`${code.code} - ${code.description}`);
+setShowIcdDropdown(false);
+}}
+>
+<div className="font-medium text-blue-600">{code.code}</div>
+<div className="text-sm text-gray-600">{code.description}</div>
+</div>
+))}
+</div>
+)}
+</div>
+
+<div>
+<label className="block text-sm font-medium text-gray-700 mb-2">Consultation Type</label>
+<select
+value={newInvoice.type}
+onChange={(e) => setNewInvoice({...newInvoice, type: e.target.value})}
+className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+>
+<option value="">Select Type</option>
+<option value="General Consultation">General Consultation</option>
+<option value="Follow-up">Follow-up</option>
+<option value="Specialist Referral">Specialist Referral</option>
+</select>
+</div>
+
+<div className="md:col-span-2">
+<label className="block text-sm font-medium text-gray-700 mb-2">Voucher Source</label>
+<select
+value={newInvoice.voucherSource}
+onChange={(e) => setNewInvoice({...newInvoice, voucherSource: e.target.value})}
+className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+>
+<option value="">Select Voucher Source</option>
+<option value="Government Subsidy">Government Subsidy</option>
+<option value="Corporate Wellness">Corporate Wellness Program</option>
+<option value="Insurance Voucher">Insurance Voucher</option>
+<option value="NGO Funding">NGO Funding</option>
+</select>
+</div>
+</div>
+
+<div className="bg-blue-50 p-4 rounded-md mb-6">
+<div className="flex items-center">
+<AlertCircle className="h-5 w-5 text-blue-500 mr-2" />
+<p className="text-sm text-blue-700">
+<strong>Phase 1:</strong> All voucher consultations are zero-rated (R0) but providers still receive R350 and pharmacies R50 per consultation for settlement purposes.
+</p>
+</div>
+</div>
+
+<button
+onClick={handleCreateInvoice}
+className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium"
+>
+Create Invoice
+</button>
+</div>
+)}
+
+{activeTab === 'reconciliation' && (
+<div className="bg-white rounded-lg shadow-sm p-6">
+<h2 className="text-xl font-semibold mb-6">Weekly Reconciliation & Settlement</h2>
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div>
+<h3 className="text-lg font-medium mb-4">Revenue Breakdown</h3>
+<div className="space-y-4">
+<div className="flex justify-between p-3 bg-gray-50 rounded">
+<span>Card Payments</span>
+<span className="font-semibold">R{consultations.filter(c => !c.isVoucher).reduce((sum, c) => sum + c.amount, 0)}</span>
+</div>
+<div className="flex justify-between p-3 bg-gray-50 rounded">
+<span>Voucher Consultations</span>
+<span className="font-semibold text-orange-600">R0 (Zero-rated)</span>
+</div>
+<div className="flex justify-between p-3 bg-blue-50 rounded border-t-2 border-blue-500">
+<span className="font-semibold">Total Revenue</span>
+<span className="font-bold text-blue-600">R{weeklyData.totalRevenue}</span>
+</div>
+</div>
+</div>
+
+<div>
+<h3 className="text-lg font-medium mb-4">Settlement Requirements</h3>
+<div className="space-y-4">
+<div className="flex justify-between p-3 bg-gray-50 rounded">
+<span>Provider Payments</span>
+<span className="font-semibold">R{weeklyData.providerPayments}</span>
+</div>
+<div className="flex justify-between p-3 bg-gray-50 rounded">
+<span>Pharmacy Payments</span>
+<span className="font-semibold">R{weeklyData.pharmacyPayments}</span>
+</div>
+<div className="flex justify-between p-3 bg-red-50 rounded border-t-2 border-red-500">
+<span className="font-semibold">Total Payouts</span>
+<span className="font-bold text-red-600">R{weeklyData.providerPayments + weeklyData.pharmacyPayments}</span>
+</div>
+<div className="flex justify-between p-3 bg-green-50 rounded border-t-2 border-green-500">
+<span className="font-semibold">Net Position</span>
+<span className={`font-bold ${weeklyData.totalRevenue - (weeklyData.providerPayments + weeklyData.pharmacyPayments) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+R{weeklyData.totalRevenue - (weeklyData.providerPayments + weeklyData.pharmacyPayments)}
+</span>
+</div>
+</div>
+</div>
+</div>
+
+<div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+<div className="flex items-center mb-2">
+<Clock className="h-5 w-5 text-yellow-600 mr-2" />
+<h4 className="font-semibold text-yellow-800">Reconciliation Notes</h4>
+</div>
+<p className="text-yellow-700 text-sm">
+Voucher consultations create a funding gap that needs to be covered by external sources.
+Pending invoices ({weeklyData.pendingInvoices}) must be submitted to voucher providers for reimbursement.
+</p>
+</div>
+</div>
+)}
+
+{activeTab === 'activity' && (
+<div className="bg-white rounded-lg shadow-sm p-6">
+<h2 className="text-xl font-semibold mb-6">Daily Activity Report</h2>
+
+<div className="overflow-x-auto">
+<table className="min-w-full divide-y divide-gray-200">
+<thead className="bg-gray-50">
+<tr>
+<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
+<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ICD-10</th>
+<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+</tr>
+</thead>
+<tbody className="bg-white divide-y divide-gray-200">
+{consultations.map((consultation) => (
+<tr key={consultation.id} className={consultation.isVoucher ? 'bg-orange-50' : ''}>
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{consultation.date}</td>
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{consultation.provider}</td>
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{consultation.patient}</td>
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+<div className="font-medium">{consultation.icd10}</div>
+<div className="text-xs text-gray-500">{consultation.icd10Description}</div>
+</td>
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{consultation.type}</td>
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+{consultation.isVoucher ? (
+<span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">
+{consultation.voucherSource}
+</span>
+) : (
+consultation.paymentMethod
+)}
+</td>
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+R{consultation.amount}
+</td>
+<td className="px-6 py-4 whitespace-nowrap">
+<span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+consultation.status === 'Completed'
+? 'bg-green-100 text-green-800'
+: 'bg-yellow-100 text-yellow-800'
+}`}>
+{consultation.status}
+</span>
+</td>
+</tr>
+))}
+</tbody>
+</table>
+</div>
+</div>
+)}
+</div>
+</div>
+```
+
+);
+};
+
+export default CliniBillVoucherPOC;
