@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CliniBill Voucher POC</title>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100">
+<div id="root"></div>
+
+<script type="text/babel">
+
+const { useState, useEffect } = React;
+
+// Basic icon replacements (instead of lucide-react imports)
+const IconUsers = () => <span className="text-blue-500 text-2xl">👥</span>;
+const IconDollar = () => <span className="text-green-500 text-2xl">💰</span>;
+const IconFile = () => <span className="text-yellow-500 text-2xl">📄</span>;
+const IconCheck = () => <span className="text-purple-500 text-2xl">✔️</span>;
+const IconAlert = () => <span className="text-blue-600 text-xl">⚠️</span>;
+const IconClock = () => <span className="text-yellow-600 text-xl">⏳</span>;
+
+
+function StatCard({ icon, title, value, subtitle }) {
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-400">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+        </div>
+        {icon}
+      </div>
+    </div>
+  );
+}
+
+function CliniBillVoucherPOC() {
+  const [activeTab, setActiveTab] = useState("invoicing");
+  const [icdSearch, setIcdSearch] = useState("");
+  const [showIcdDropdown, setShowIcdDropdown] = useState(false);
+
+  const commonICD10Codes = [
+    { code: "Z00.0", description: "General adult medical examination" },
+    { code: "Z00.1", description: "Routine child health examination" },
+    { code: "J06.9", description: "Acute upper respiratory infection" },
+    { code: "I10", description: "Essential hypertension" },
+    { code: "E11.9", description: "Type 2 diabetes - no complications" },
+  ];
+
+  const [filteredICD10, setFilteredICD10] = useState(commonICD10Codes);
+
+  const [consultations, setConsultations] = useState([
+    {
+      id: 1,
+      date: "2025-07-22",
+      provider: "Dr. Smith",
+      patient: "John Doe",
+      icd10: "Z00.0",
+      icd10Description: "General adult medical examination",
+      type: "General Consultation",
+      paymentMethod: "Card",
+      amount: 500,
+      providerPay: 350,
+      pharmacyPay: 50,
+      status: "Completed",
+      isVoucher: false
+    },
+    {
+      id: 2,
+      date: "2025-07-22",
+      provider: "Dr. Johnson",
+      patient: "Jane Smith",
+      icd10: "Z00.1",
+      icd10Description: "Routine child health examination",
+      type: "Follow-up",
+      paymentMethod: "Manual Voucher",
+      amount: 0,
+      providerPay: 350,
+      pharmacyPay: 50,
+      status: "Pending Invoice",
+      isVoucher: true,
+      voucherSource: "Government Subsidy"
+    }
+  ]);
+
+  const [newInvoice, setNewInvoice] = useState({
+    provider: "",
+    patient: "",
+    icd10: "",
+    icd10Description: "",
+    type: "",
+    voucherSource: "",
+  });
+
+  const [weeklyData, setWeeklyData] = useState({
+    totalConsultations: 0,
+    paidConsultations: 0,
+    voucherConsultations: 0,
+    totalRevenue: 0,
+    providerPayments: 0,
+    pharmacyPayments: 0,
+    pendingInvoices: 0
+  });
+
+  useEffect(() => {
+    const filtered = commonICD10Codes.filter(c =>
+      c.code.toLowerCase().includes(icdSearch.toLowerCase()) ||
+      c.description.toLowerCase().includes(icdSearch.toLowerCase())
+    );
+    setFilteredICD10(filtered);
+  }, [icdSearch]);
+
+
+  useEffect(() => {
+    const total = consultations.length;
+    const paid = consultations.filter(c => !c.isVoucher).length;
+    const voucher = consultations.filter(c => c.isVoucher).length;
+    const revenue = consultations.reduce((s, c) => s + c.amount, 0);
+
+    setWeeklyData({
+      totalConsultations: total,
+      paidConsultations: paid,
+      voucherConsultations: voucher,
+      totalRevenue: revenue,
+      providerPayments: consultations.reduce((s, c) => s + c.providerPay, 0),
+      pharmacyPayments: consultations.reduce((s, c) => s + c.pharmacyPay, 0),
+      pendingInvoices: consultations.filter(c => c.status === "Pending Invoice").length
+    });
+  }, [consultations]);
+
+
+  return (
+    <div className="max-w-5xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-gray-900 mb-4">CliniBill Voucher POC</h1>
+
+      {/* Navigation */}
+      <div className="flex space-x-4 mb-6 border-b">
+        {["invoicing","reconciliation","activity"].map(tab => (
+          <button key={tab}
+            className={`py-3 px-4 font-medium ${activeTab === tab ? "text-blue-600 border-b-2 border-blue-500" : "text-gray-500"}`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab.replace(/^\w/, c => c.toUpperCase())}
+          </button>
+        ))}
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <StatCard title="Total Consultations" value={weeklyData.totalConsultations} icon={<IconUsers />} />
+        <StatCard title="Revenue" value={`R${weeklyData.totalRevenue}`} icon={<IconDollar />} subtitle={`${weeklyData.paidConsultations} paid`} />
+        <StatCard title="Pending Invoices" value={weeklyData.pendingInvoices} icon={<IconFile />} />
+        <StatCard title="Provider Payouts" value={`R${weeklyData.providerPayments}`} icon={<IconCheck />} />
+      </div>
+
+      {activeTab === "invoicing" && (
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-xl font-semibold mb-4">Create Voucher Invoice</h2>
+
+          <input
+            placeholder="Search ICD-10..."
+            className="w-full border p-3 mb-3 rounded"
+            value={icdSearch}
+            onChange={e => setIcdSearch(e.target.value)}
+            onFocus={() => setShowIcdDropdown(true)}
+          />
+
+          {showIcdDropdown && filteredICD10.map((c, i) => (
+            <div key={i} className="p-2 bg-gray-50 border-b cursor-pointer hover:bg-gray-100"
+              onClick={() => {
+                setNewInvoice({...newInvoice, icd10: c.code, icd10Description: c.description});
+                setIcdSearch(`${c.code} - ${c.description}`);
+                setShowIcdDropdown(false);
+              }}>
+              {c.code} — {c.description}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "activity" && (
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-xl font-semibold mb-4">Daily Activity</h2>
+
+          <table className="w-full text-left border-collapse">
+            <thead><tr className="border-b bg-gray-50">
+              <th className="p-2">Date</th>
+              <th className="p-2">Provider</th>
+              <th className="p-2">Patient</th>
+              <th className="p-2">ICD10</th>
+              <th className="p-2">Amount</th>
+            </tr></thead>
+
+            <tbody>
+              {consultations.map(c => (
+                <tr key={c.id} className={c.isVoucher ? "bg-yellow-50 border-b" : "border-b"}>
+                  <td className="p-2">{c.date}</td>
+                  <td className="p-2">{c.provider}</td>
+                  <td className="p-2">{c.patient}</td>
+                  <td className="p-2">{c.icd10}</td>
+                  <td className="p-2">R{c.amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+ReactDOM.render(<CliniBillVoucherPOC />, document.getElementById("root"));
+</script>
+
+</body>
+</html>
